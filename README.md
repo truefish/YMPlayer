@@ -1,2 +1,14 @@
 # YMPlayer
 Yandex Radio PyQt5 Player (based on https://github.com/MarshalX/yandex-music-api)
+
+You you will need to install libraries for YMAPI (https://github.com/MarshalX/yandex-music-api), libraries for VLC and libraries for PyQt5.
+
+The preferred install method is through PyPI:
+
+pip install python-vlc
+pip install PyQt5
+
+or (if you are using python3):
+
+pip3 install PyQt5
+pip3 install python-vlc

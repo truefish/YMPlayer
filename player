@@ -12,7 +12,7 @@ import threading
 import sys
 import vlc
 
-TOKEN='y0_AgAAAAADYi8aAAG8XgAAAADYl7OgqniMheVfQD2c27VItFcudoNqeJE'
+TOKEN='your_yandex_music_token_here'
 
 darktheme = '''
 App{

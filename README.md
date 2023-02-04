@@ -5,9 +5,9 @@ You will need to install libraries for YMAPI (https://github.com/MarshalX/yandex
 
 The preferred install method is through PyPI:
 
-pip install python-vlc
-
 pip install PyQt5
+
+pip install python-vlc
 
 or (if you are using python3):
 

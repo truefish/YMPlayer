@@ -1,0 +1,204 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+from PyQt5.QtWidgets import *
+from PyQt5.QtGui import *
+from PyQt5.QtCore import *
+from time import sleep
+from radio import Radio
+from yandex_music import Client
+
+import threading
+import sys
+import vlc
+
+TOKEN='y0_AgAAAAADYi8aAAG8XgAAAADYl7OgqniMheVfQD2c27VItFcudoNqeJE'
+
+darktheme = '''
+App{
+    background-color: gray;
+    border-radius: 10px;
+}
+TitleBar {
+    background-color: rgb(54, 157, 180);
+}
+QPlainTextEdit{
+    background-color: black;
+    font: 700 12pt \"Arial\";
+    padding: 8px;
+    color: green;
+    border-radius: 10px;
+}
+QPushButton{
+    background-color: green;
+}
+'''
+
+class App(QMainWindow):
+
+    mysignal = pyqtSignal(str, name='mySignal')
+
+    def __init__(self):
+        super().__init__()
+        self.title = 'Yandex Radio'
+        self.left = 10
+        self.top = 10
+        self.width = 650
+        self.height = 200
+        self.inst = vlc.Instance('--quiet')
+        self.player = self.inst.media_player_new()
+        self.player.audio_set_volume(50)
+        self.proc = threading.Thread(target=self.play, args=())
+        self.mysignal.connect(self.mySignalHandler)
+        self.playNext = False
+        self.pausePlayer = False
+        self.exitApp = False
+        self.initUI()
+
+    def initUI(self):
+        #setup mainwindow
+        self.setWindowTitle(self.title)
+        self.setGeometry(self.left, self.top, self.width, self.height)
+        self.setStyleSheet(darktheme)
+        self.setFixedSize(self.width,self.height)
+
+        frameGeometry = self.frameGeometry()
+        screen = QApplication.desktop().screenNumber(QApplication.desktop().cursor().pos())
+        centerPoint = QApplication.desktop().screenGeometry(screen).center()
+        frameGeometry.moveCenter(centerPoint)
+        self.move(frameGeometry.topLeft())
+
+        #create lcdnumber
+        self.lcd = QLCDNumber(self)
+        self.lcd.setSegmentStyle(QLCDNumber.Flat)
+        self.lcd.setSmallDecimalPoint(False)
+        self.lcd.setDigitCount(3)
+        self.lcd.display(50)
+        self.lcd.move(555,150)
+        self.lcd.setFrameStyle(QFrame.Panel | QFrame.Plain)
+        self.lcd.setLineWidth(0)
+
+        #create slider
+        self.slider = QSlider(Qt.Orientation.Horizontal, self)
+        self.slider.setRange(0,100)
+        self.slider.setSingleStep(1)
+        self.slider.setValue(50)
+        self.slider.setTickPosition(QSlider.TickPosition.TicksBelow)
+        self.slider.move(480,150)
+
+        # Create textbox
+        self.textbox = QPlainTextEdit(self)
+        self.textbox.move(5, 5)
+        self.textbox.resize(640, 130)
+        self.textbox.setStyleSheet(darktheme)
+
+        # Create a button in the window
+        self.buttonPlay = QPushButton('Play', self)
+        self.buttonPlay.move(15, 150)
+        self.buttonPlay.setStyleSheet(darktheme)
+
+        # Create a button in the window
+        self.buttonPause = QPushButton('Pause', self)
+        self.buttonPause.move(130, 150)
+        self.buttonPause.setStyleSheet(darktheme)
+
+        # Create a button in the window
+        self.buttonNext = QPushButton('Next', self)
+        self.buttonNext.move(245, 150)
+        self.buttonNext.setStyleSheet(darktheme)
+
+        # Create a button in the window
+        self.buttonExit = QPushButton('Exit', self)
+        self.buttonExit.move(360, 150)
+        self.buttonExit.setStyleSheet(darktheme)
+
+        # connect button to function on_click
+        self.buttonNext.clicked.connect(self.onClickNext)
+        self.buttonPlay.clicked.connect(self.onClickPlay)
+        self.buttonExit.clicked.connect(self.onClickExit)
+        self.buttonPause.clicked.connect(self.onClickPause)
+        self.slider.valueChanged.connect(self.updateSlider)
+    
+    @pyqtSlot()
+    def updateSlider(self):
+        self.player.audio_set_volume(self.slider.value())
+        self.lcd.display(self.slider.value())
+
+    def mySignalHandler(self, data):
+        if data == 'NEW':
+            self.textbox.clear()
+            return
+        self.textbox.appendPlainText(data)
+
+    def play(self):
+        client = Client(TOKEN)
+        _stations = client.rotor_stations_list()
+        _station = _stations[91].station
+        _station_id = f'{_station.id.type}:{_station.id.tag}'
+        _station_from = _station.id_for_from
+        radio = Radio(client)
+        track = radio.start_radio(_station_id, _station_from)
+        while self.exitApp == False:
+            try:
+                track = radio.play_next()
+                self.mySignal.emit('NEW')
+                self.mySignal.emit('Station:  ' + _station.name)
+                self.mySignal.emit('Artist:     ' + ' | '.join(a.name for a in track.artists))
+                self.mySignal.emit('Album:   ' + ' | '.join(a.title for a in track.albums))
+                self.mySignal.emit('Title:       ' + track.title)
+                try:
+                    if track.download_info is None:
+                        track.get_download_info()
+                        for info in track.download_info:
+                            if info.codec == 'mp3' and info.bitrate_in_kbps == 320:
+                                link = info.get_direct_link()
+                                break
+                except Exception as e:
+                    print('Error:', e)
+                    sleep(1)
+                media=self.inst.media_new(link)
+                self.player.set_media(media)
+                self.player.play()
+                while True:
+                    state = self.player.get_state()
+                    if state == vlc.State.Ended or self.playNext == True or self.exitApp == True:
+                        self.playNext = False
+                        break
+                    sleep(1)
+                self.player.stop()
+            except Exception as e:
+                print('Error:', e)
+                sleep(1)
+        app.exit()
+
+    @pyqtSlot()
+    def onClickPlay(self):
+        self.buttonPlay.setEnabled(False)
+        self.proc.start()
+
+    @pyqtSlot()
+    def onClickNext(self):
+        self.playNext = True
+
+    @pyqtSlot()
+    def onClickExit(self):
+        self.exitApp = True
+        app.exit()
+
+    @pyqtSlot()
+    def onClickPause(self):
+        if self.pausePlayer == False:
+            self.player.pause()
+            self.pausePlayer = True
+            self.buttonPause.setText('Play')
+        else:
+            self.player.play()
+            self.pausePlayer = False
+            self.buttonPause.setText('Pause')
+
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    app.setStyleSheet(darktheme)
+    application = App()
+    application.show()
+    app.exec()

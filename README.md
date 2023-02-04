@@ -13,5 +13,7 @@ or (if you are using python3):
 pip3 install PyQt5
 pip3 install python-vlc
 
-In order to get a token, you can use the following script (with ChromeBrowser installed).
+In order to get a token, you can use the following script (with ChromeBrowser installed).$
 
+$chmod +x get_token.sh
+$./get_token.sh

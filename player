@@ -133,7 +133,7 @@ class App(QMainWindow):
     def play(self):
         client = Client(TOKEN)
         _stations = client.rotor_stations_list()
-        _station = _stations[91].station
+        _station = _stations[91].station #your station from station_list.txt
         _station_id = f'{_station.id.type}:{_station.id.tag}'
         _station_from = _station.id_for_from
         radio = Radio(client)

@@ -20,3 +20,15 @@ In order to get a token, you can use the following script (with Chrome Browser i
 $chmod +x get_token.sh
 
 $./get_token.sh
+
+Click on the link https://oauth .yandex.ru/authorize?response_type=token&client_id=23cabbbdc6cd418abb4b39c32c41195d.
+
+We log in if necessary and provide access.
+
+The browser will redirect to an address like https://music.yandex.ru/#access_token=AQAAAAAYc ***&token_type=bearer&expires_in=31535645.
+
+A redirect to another page will happen very quickly.
+
+Your token is what is after access_token.
+
+Close the browser, otherwise the log file will be very large.
